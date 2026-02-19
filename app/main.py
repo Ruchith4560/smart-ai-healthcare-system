@@ -4,7 +4,7 @@ from .database import engine, get_db
 from .models import Base, User
 from .schemas import UserCreate, UserLogin
 from .auth import hash_password, verify_password, create_access_token
-from .auth import get_current_user
+from .auth import get_current_user, require_role
 
 app = FastAPI()
 
@@ -29,7 +29,8 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         name=user.name,
         email=user.email,
         password=hashed_pw,
-        role=user.role
+        role=user.role,
+        specialization=user.specialization
     )
 
     db.add(new_user)
@@ -61,7 +62,6 @@ def get_profile(current_user: User = Depends(get_current_user)):
         "email": current_user.email,
         "role": current_user.role
     }
-from .auth import require_role
 
 @app.get("/doctor/dashboard")
 def doctor_dashboard(user: User = Depends(require_role("doctor"))):
@@ -71,3 +71,55 @@ def doctor_dashboard(user: User = Depends(require_role("doctor"))):
 @app.get("/patient/dashboard")
 def patient_dashboard(user: User = Depends(require_role("patient"))):
     return {"message": f"Welcome Patient {user.name}"}
+from typing import Optional
+
+@app.get("/doctors")
+def list_doctors(
+    specialization: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(User).filter(User.role == "doctor")
+
+    if specialization:
+        query = query.filter(User.specialization == specialization)
+
+    doctors = query.all()
+
+    return [
+        {
+            "id": doctor.id,
+            "name": doctor.name,
+            "email": doctor.email,
+            "specialization": doctor.specialization
+        }
+        for doctor in doctors
+    ]
+from .models import Appointment
+from .schemas import AppointmentCreate
+
+@app.post("/appointments")
+def create_appointment(
+    appointment: AppointmentCreate,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_role("patient"))
+):
+    # Check doctor exists
+    doctor = db.query(User).filter(
+        User.id == appointment.doctor_id,
+        User.role == "doctor"
+    ).first()
+
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+
+    new_appointment = Appointment(
+        patient_id=user.id,
+        doctor_id=appointment.doctor_id,
+        problem=appointment.problem
+    )
+
+    db.add(new_appointment)
+    db.commit()
+    db.refresh(new_appointment)
+
+    return {"message": "Appointment booked successfully"}
