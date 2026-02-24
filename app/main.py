@@ -5,6 +5,13 @@ from .models import Base, User
 from .schemas import UserCreate, UserLogin
 from .auth import hash_password, verify_password, create_access_token
 from .auth import get_current_user, require_role
+from .ai_engine import suggest_specialization
+from .models import User
+from sqlalchemy.orm import Session
+
+from pydantic import BaseModel
+from typing import List
+
 
 app = FastAPI()
 
@@ -123,3 +130,92 @@ def create_appointment(
     db.refresh(new_appointment)
 
     return {"message": "Appointment booked successfully"}
+class SymptomRequest(BaseModel):
+    symptoms: List[str]
+@app.post("/ai/suggest-doctor")
+def suggest_doctor(data: SymptomRequest, db: Session = Depends(get_db)):
+    
+    specialization = suggest_specialization(data.symptoms)
+
+    doctors = db.query(User).filter(
+        User.role == "doctor",
+        User.specialization == specialization
+    ).all()
+
+    if not doctors:
+        return {
+            "specialization": specialization,
+            "message": "No doctors available for this specialization"
+        }
+
+    return {
+        "specialization": specialization,
+        "available_doctors": [
+            {
+                "id": doctor.id,
+                "name": doctor.name,
+                "email": doctor.email
+            }
+            for doctor in doctors
+        ]
+    }
+@app.post("/ai/suggest-doctor")
+def suggest_doctor(data: SymptomRequest, db: Session = Depends(get_db)):
+
+    specialization = suggest_specialization(data.symptoms)
+
+    doctors = db.query(User).filter(
+        User.role == "doctor",
+        User.specialization == specialization
+    ).all()
+
+    doctor_list = [
+        {
+            "id": doctor.id,
+            "name": doctor.name,
+            "email": doctor.email,
+            "specialization": doctor.specialization
+        }
+        for doctor in doctors
+    ]
+
+    return {
+        "recommended_specialization": specialization,
+        "available_doctors": doctor_list
+    }
+from .models import SymptomHistory
+
+@app.post("/ai/suggest-doctor")
+def suggest_doctor(
+    data: SymptomRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("patient"))
+):
+    specialization = suggest_specialization(data.symptoms)
+
+    # Save history
+    history = SymptomHistory(
+        patient_id=current_user.id,
+        symptoms=", ".join(data.symptoms),
+        predicted_specialization=specialization
+    )
+
+    db.add(history)
+    db.commit()
+
+    doctors = db.query(User).filter(
+        User.role == "doctor",
+        User.specialization.ilike(specialization)
+    ).all()
+
+    return {
+        "recommended_specialization": specialization,
+        "available_doctors": [
+            {
+                "id": doctor.id,
+                "name": doctor.name,
+                "specialization": doctor.specialization
+            }
+            for doctor in doctors
+        ]
+    }

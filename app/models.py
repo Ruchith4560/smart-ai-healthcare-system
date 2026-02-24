@@ -23,3 +23,15 @@ class Appointment(Base):
 
     patient = relationship("User", foreign_keys=[patient_id])
     doctor = relationship("User", foreign_keys=[doctor_id])
+    from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship
+
+class SymptomHistory(Base):
+    __tablename__ = "symptom_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    patient_id = Column(Integer, ForeignKey("users.id"))
+    symptoms = Column(String)
+    predicted_specialization = Column(String)
+
+    patient = relationship("User")
