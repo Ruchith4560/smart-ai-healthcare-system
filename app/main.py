@@ -2,10 +2,22 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel
-from app.schemas import DiagnosisUpdate
+
 from .database import engine, get_db
-from .models import Base, User, SymptomHistory
-from .schemas import UserCreate, UserLogin
+from .models import (
+    Base,
+    User,
+    Appointment,
+    DoctorAvailability,
+    SymptomHistory,
+)
+from .schemas import (
+    UserCreate,
+    UserLogin,
+    AppointmentCreate,
+    AvailabilityCreate,
+    DiagnosisUpdate,
+)
 from .auth import (
     hash_password,
     verify_password,
@@ -14,8 +26,7 @@ from .auth import (
     require_role,
 )
 from .ai_engine import suggest_specialization
-from .models import Appointment
-from .schemas import AppointmentCreate
+
 
 app = FastAPI()
 
@@ -27,9 +38,6 @@ Base.metadata.create_all(bind=engine)
 @app.get("/")
 def home():
     return {"message": "Smart AI Healthcare System Running 🚀"}
-
-
-
 
 @app.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -102,7 +110,6 @@ def list_doctors(
     specialization: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
-
     query = db.query(User).filter(User.role == "doctor")
 
     if specialization:
@@ -122,7 +129,6 @@ def list_doctors(
 
 
 
-
 class SymptomRequest(BaseModel):
     symptoms: List[str]
 
@@ -133,10 +139,8 @@ def suggest_doctor(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("patient")),
 ):
-
     specialization = suggest_specialization(data.symptoms)
 
-    # Save history
     history = SymptomHistory(
         patient_id=current_user.id,
         symptoms=", ".join(data.symptoms),
@@ -162,6 +166,8 @@ def suggest_doctor(
             for doctor in doctors
         ],
     }
+
+
 @app.get("/patient/history")
 def get_patient_history(
     db: Session = Depends(get_db),
@@ -171,14 +177,9 @@ def get_patient_history(
         SymptomHistory.patient_id == current_user.id
     ).all()
 
-    return [
-        {
-            "id": record.id,
-            "symptoms": record.symptoms,
-            "predicted_specialization": record.predicted_specialization
-        }
-        for record in history
-    ]
+    return history
+
+
 @app.get("/doctor/patient-history/{patient_id}")
 def get_patient_history_for_doctor(
     patient_id: int,
@@ -197,17 +198,9 @@ def get_patient_history_for_doctor(
         SymptomHistory.patient_id == patient_id
     ).all()
 
-    return {
-        "patient_name": patient.name,
-        "history": [
-            {
-                "id": record.id,
-                "symptoms": record.symptoms,
-                "predicted_specialization": record.predicted_specialization
-            }
-            for record in history
-        ]
-    }
+    return history
+
+
 @app.put("/doctor/diagnose/{history_id}")
 def add_diagnosis(
     history_id: int,
@@ -229,25 +222,68 @@ def add_diagnosis(
     db.refresh(record)
 
     return {"message": "Diagnosis added successfully"}
+
+
+@app.post("/doctor/availability")
+def add_availability(
+    data: AvailabilityCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("doctor"))
+):
+    slot = DoctorAvailability(
+    doctor_id=current_user.id,
+    available_time=data.available_time
+)
+    db.add(slot)
+    db.commit()
+    db.refresh(slot)
+
+    return {"message": "Availability slot added"}
+
+
+@app.get("/doctor/{doctor_id}/availability")
+def get_doctor_availability(
+    doctor_id: int,
+    db: Session = Depends(get_db)
+):
+    slots = db.query(DoctorAvailability).filter(
+        DoctorAvailability.doctor_id == doctor_id,
+        DoctorAvailability.is_booked == "no"
+    ).all()
+
+    return [
+        {
+            "slot_id": slot.id,
+            "available_time": slot.available_time
+        }
+        for slot in slots
+    ]
+
+
+
+
 @app.post("/appointments/book")
 def book_appointment(
     data: AppointmentCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("patient"))
 ):
-    doctor = db.query(User).filter(
-        User.id == data.doctor_id,
-        User.role == "doctor"
+    slot = db.query(DoctorAvailability).filter(
+        DoctorAvailability.id == data.slot_id,
+        DoctorAvailability.is_booked == "no"
     ).first()
 
-    if not doctor:
-        raise HTTPException(status_code=404, detail="Doctor not found")
+    if not slot:
+        raise HTTPException(status_code=400, detail="Slot not available")
 
     appointment = Appointment(
         patient_id=current_user.id,
-        doctor_id=data.doctor_id,
-        appointment_time=data.appointment_time
+        doctor_id=slot.doctor_id,
+        appointment_time=slot.available_time,
+        status="booked"
     )
+
+    slot.is_booked = "yes"
 
     db.add(appointment)
     db.commit()
@@ -257,42 +293,28 @@ def book_appointment(
         "message": "Appointment booked successfully",
         "appointment_id": appointment.id
     }
+
+
 @app.get("/appointments/my")
 def get_my_appointments(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("patient"))
 ):
-    appointments = db.query(Appointment).filter(
+    return db.query(Appointment).filter(
         Appointment.patient_id == current_user.id
     ).all()
 
-    return [
-        {
-            "id": appt.id,
-            "doctor_id": appt.doctor_id,
-            "appointment_time": appt.appointment_time,
-            "status": appt.status
-        }
-        for appt in appointments
-    ]
+
 @app.get("/appointments/doctor")
 def get_doctor_appointments(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("doctor"))
 ):
-    appointments = db.query(Appointment).filter(
+    return db.query(Appointment).filter(
         Appointment.doctor_id == current_user.id
     ).all()
 
-    return [
-        {
-            "id": appt.id,
-            "patient_id": appt.patient_id,
-            "appointment_time": appt.appointment_time,
-            "status": appt.status
-        }
-        for appt in appointments
-    ]
+
 @app.put("/appointments/cancel/{appointment_id}")
 def cancel_appointment(
     appointment_id: int,
@@ -311,14 +333,16 @@ def cancel_appointment(
         raise HTTPException(status_code=400, detail="Cannot cancel this appointment")
 
     appointment.status = "cancelled"
-
     db.commit()
-    db.refresh(appointment)
 
     return {"message": "Appointment cancelled successfully"}
+from .schemas import AppointmentComplete
+
+
 @app.put("/appointments/complete/{appointment_id}")
 def complete_appointment(
     appointment_id: int,
+    data: AppointmentComplete,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("doctor"))
 ):
@@ -334,6 +358,7 @@ def complete_appointment(
         raise HTTPException(status_code=400, detail="Cannot complete this appointment")
 
     appointment.status = "completed"
+    appointment.doctor_notes = data.notes
 
     db.commit()
     db.refresh(appointment)

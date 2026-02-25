@@ -41,3 +41,8 @@ class DiagnosisUpdate(BaseModel):
 class AppointmentCreate(BaseModel):
     doctor_id: int
     appointment_time: datetime
+class AvailabilityCreate(BaseModel):
+    available_time: datetime
+
+class AppointmentComplete(BaseModel):
+    notes: Optional[str] = None 
