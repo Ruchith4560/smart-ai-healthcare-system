@@ -8,8 +8,8 @@ import "./index.css";
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
-      <Toaster position="top-right" />
       <App />
+      <Toaster position="top-right" />
     </BrowserRouter>
   </React.StrictMode>
 );
