@@ -1,76 +1,54 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import API from "../services/api";
 import Layout from "../components/Layout";
 
-function Doctors() {
-  const [doctors, setDoctors] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+function Dashboard() {
+  const [user, setUser] = useState(null);
+  const [appointments, setAppointments] = useState([]);
 
   useEffect(() => {
-    const fetchDoctors = async () => {
-      try {
-        const res = await API.get("/doctors");
-        setDoctors(Array.isArray(res.data) ? res.data : []);
-      } catch (err) {
-        console.log("Error fetching doctors:", err);
-        setDoctors([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+    API.get("/profile").then((res) => setUser(res.data));
 
-    fetchDoctors();
+    API.get("/appointments/my")
+      .then((res) => setAppointments(res.data))
+      .catch(() => setAppointments([]));
   }, []);
 
-  const handleBook = (doctorId) => {
-    navigate("/book", { state: { doctorId } });
-  };
+  if (!user) return null;
+
+  const total = appointments.length;
+  const confirmed = appointments.filter(a => a.status === "confirmed").length;
+  const pending = appointments.filter(a => a.status === "booked").length;
 
   return (
-    <Layout role="patient">
-      <h1 className="text-2xl font-semibold mb-6">
-        Available Doctors
+    <Layout>
+
+      <h1 className="text-3xl font-bold mb-8">
+        Dashboard Overview
       </h1>
 
-      {loading ? (
-        <p>Loading doctors...</p>
-      ) : doctors.length === 0 ? (
-        <p>No doctors available.</p>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {doctors.map((doc) => (
-            <div
-              key={doc.id}
-              className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition"
-            >
-              <h2 className="text-lg font-semibold mb-2">
-                Dr. {doc.name}
-              </h2>
+      {/* Analytics Cards */}
+      <div className="grid md:grid-cols-3 gap-6">
 
-              <p className="text-sm text-gray-500 mb-4">
-                {doc.specialization || "General Physician"}
-              </p>
-
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400">
-                  ID: {doc.id}
-                </span>
-
-                <button
-                  onClick={() => handleBook(doc.id)}
-                  className="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
-                >
-                  Book
-                </button>
-              </div>
-            </div>
-          ))}
+        <div className="bg-white p-6 rounded-2xl shadow-lg">
+          <h2 className="text-slate-500 text-sm">Total Appointments</h2>
+          <p className="text-3xl font-bold text-blue-600 mt-2">{total}</p>
         </div>
-      )}
+
+        <div className="bg-white p-6 rounded-2xl shadow-lg">
+          <h2 className="text-slate-500 text-sm">Confirmed</h2>
+          <p className="text-3xl font-bold text-green-600 mt-2">{confirmed}</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow-lg">
+          <h2 className="text-slate-500 text-sm">Pending</h2>
+          <p className="text-3xl font-bold text-orange-500 mt-2">{pending}</p>
+        </div>
+
+      </div>
+
     </Layout>
   );
 }
 
-export default Doctors;
+export default Dashboard;

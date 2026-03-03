@@ -1,60 +1,113 @@
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import API from "../services/api";
-import Layout from "../components/Layout";
 
-function Dashboard() {
+function Layout({ children }) {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     API.get("/profile")
       .then((res) => setUser(res.data))
-      .catch(() => {});
+      .catch(() => navigate("/login"));
   }, []);
 
-  if (!user) return <p className="p-8">Loading...</p>;
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
+  if (!user) return null;
 
   return (
-    <Layout role={user.role}>
-      <h1 className="text-2xl font-semibold mb-6">
-        Welcome, {user.name}
-      </h1>
+    <div className="min-h-screen flex bg-slate-100">
 
-      <div className="bg-white p-6 rounded-xl shadow-sm mb-8">
-        <p><strong>Email:</strong> {user.email}</p>
-        <p><strong>Role:</strong> {user.role}</p>
+      {/* Sidebar */}
+      <aside className="w-64 bg-white shadow-xl flex flex-col p-6">
+
+        <h1 className="text-2xl font-bold text-blue-600 mb-10">
+          Smart AI
+        </h1>
+
+        <nav className="flex flex-col gap-4 text-slate-600 font-medium">
+
+          <Link to="/dashboard" className="hover:text-blue-600">
+            Dashboard
+          </Link>
+
+          {user.role === "patient" && (
+            <>
+              <Link to="/doctors" className="hover:text-blue-600">
+                Doctors
+              </Link>
+
+              <Link to="/book" className="hover:text-blue-600">
+                Book Appointment
+              </Link>
+
+              <Link to="/history" className="hover:text-blue-600">
+                My Appointments
+              </Link>
+
+              <Link to="/chat" className="hover:text-blue-600">
+                AI Assistant
+              </Link>
+            </>
+          )}
+
+          {user.role === "doctor" && (
+            <>
+              <Link to="/availability" className="hover:text-blue-600">
+                Availability
+              </Link>
+
+              <Link to="/doctor/dashboard" className="hover:text-blue-600">
+                Appointments
+              </Link>
+            </>
+          )}
+
+        </nav>
+
+        <div className="mt-auto pt-6">
+          <button
+            onClick={handleLogout}
+            className="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg"
+          >
+            Logout
+          </button>
+        </div>
+
+      </aside>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+
+        {/* Top Header */}
+        <header className="bg-white shadow-md px-8 py-4 flex justify-between items-center">
+          <div>
+            <h2 className="text-lg font-semibold">
+              Welcome, {user.name}
+            </h2>
+            <p className="text-sm text-slate-500 capitalize">
+              {user.role}
+            </p>
+          </div>
+
+          <div className="text-slate-500 text-sm">
+            Smart AI Healthcare System
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <main className="p-8">
+          {children}
+        </main>
+
       </div>
 
-      {user.role === "patient" && (
-        <div className="flex flex-wrap gap-4">
-          <ActionButton label="View Doctors" onClick={() => navigate("/doctors")} />
-          <ActionButton label="Book Appointment" onClick={() => navigate("/book")} />
-          <ActionButton label="My Appointments" onClick={() => navigate("/history")} />
-          <ActionButton label="AI Suggest Doctor" onClick={() => navigate("/suggest")} />
-          <ActionButton label="AI Chat" onClick={() => navigate("/chat")} />
-        </div>
-      )}
-
-      {user.role === "doctor" && (
-        <div className="flex gap-4">
-          <ActionButton label="Create Availability" onClick={() => navigate("/availability")} />
-          <ActionButton label="Doctor Dashboard" onClick={() => navigate("/doctor/dashboard")} />
-        </div>
-      )}
-    </Layout>
+    </div>
   );
 }
 
-function ActionButton({ label, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      className="bg-primary hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition shadow-sm"
-    >
-      {label}
-    </button>
-  );
-}
-
-export default Dashboard;
+export default Layout;

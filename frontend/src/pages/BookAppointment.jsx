@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import API from "../services/api";
 import Layout from "../components/Layout";
+import toast from "react-hot-toast";
 
 function BookAppointment() {
   const location = useLocation();
@@ -21,7 +22,7 @@ function BookAppointment() {
     e.preventDefault();
 
     if (!doctorId || !appointmentTime) {
-      alert("Please fill all fields");
+      toast.error("Please fill all fields");
       return;
     }
 
@@ -33,10 +34,10 @@ function BookAppointment() {
         appointment_time: new Date(appointmentTime).toISOString(),
       });
 
-      alert("Appointment booked successfully");
+      toast.success("Appointment booked successfully");
       setAppointmentTime("");
     } catch (err) {
-      alert(err.response?.data?.detail || "Booking failed");
+      toast.error(err.response?.data?.detail || "Booking failed");
     } finally {
       setLoading(false);
     }
@@ -44,17 +45,13 @@ function BookAppointment() {
 
   return (
     <Layout role="patient">
-      <h1 className="text-2xl font-semibold mb-6">
-        Book Appointment
-      </h1>
+      <h1 className="text-2xl font-semibold mb-6">Book Appointment</h1>
 
       <div className="bg-white p-8 rounded-xl shadow-sm max-w-lg">
         <form onSubmit={handleSubmit} className="space-y-6">
 
           <div>
-            <label className="block mb-2 font-medium">
-              Doctor ID
-            </label>
+            <label className="block mb-2 font-medium">Doctor ID</label>
             <input
               type="number"
               value={doctorId}

@@ -1,147 +1,61 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import API from "../services/api";
 import Layout from "../components/Layout";
 
 function AIChat() {
   const [message, setMessage] = useState("");
-  const [chatHistory, setChatHistory] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const chatEndRef = useRef(null);
+  const [chat, setChat] = useState([]);
 
-  const scrollToBottom = () => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [chatHistory]);
-
-  const handleSend = async (e) => {
-    e.preventDefault();
+  const sendMessage = async () => {
     if (!message.trim()) return;
 
-    const userMessage = message;
+    const res = await API.post("/ai/chat", { message });
 
-    setChatHistory((prev) => [
-      ...prev,
-      { sender: "user", text: userMessage }
+    setChat([
+      ...chat,
+      { sender: "user", text: message },
+      { sender: "bot", text: res.data.bot_reply }
     ]);
 
     setMessage("");
-    setLoading(true);
-
-    try {
-      const res = await API.post("/ai/chat", {
-        message: userMessage
-      });
-
-      const aiReply =
-        res.data.response ||
-        res.data.reply ||
-        res.data.message ||
-        JSON.stringify(res.data);
-
-      setChatHistory((prev) => [
-        ...prev,
-        { sender: "ai", text: aiReply }
-      ]);
-    } catch (err) {
-      setChatHistory((prev) => [
-        ...prev,
-        { sender: "ai", text: "Error getting AI response." }
-      ]);
-    } finally {
-      setLoading(false);
-    }
   };
 
   return (
-    <Layout role="patient">
-      <h1 style={{ marginBottom: "20px" }}>AI Health Assistant</h1>
+    <Layout>
+      <div className="card max-w-3xl mx-auto">
 
-      <div
-        style={{
-          background: "white",
-          borderRadius: "12px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
-          display: "flex",
-          flexDirection: "column",
-          height: "500px",
-          padding: "20px"
-        }}
-      >
-        <div
-          style={{
-            flex: 1,
-            overflowY: "auto",
-            marginBottom: "15px"
-          }}
-        >
-          {chatHistory.length === 0 && (
-            <p style={{ color: "gray" }}>Start chatting with AI...</p>
-          )}
+        <h2 className="text-2xl font-bold mb-6">
+          AI Healthcare Assistant
+        </h2>
 
-          {chatHistory.map((chat, index) => (
+        <div className="h-96 overflow-y-auto border rounded-lg p-4 mb-4 bg-slate-50 space-y-4">
+          {chat.map((msg, index) => (
             <div
               key={index}
-              style={{
-                display: "flex",
-                justifyContent:
-                  chat.sender === "user" ? "flex-end" : "flex-start",
-                marginBottom: "10px"
-              }}
+              className={`p-3 rounded-lg max-w-xs ${
+                msg.sender === "user"
+                  ? "bg-blue-600 text-white ml-auto"
+                  : "bg-white shadow"
+              }`}
             >
-              <div
-                style={{
-                  padding: "10px 15px",
-                  borderRadius: "20px",
-                  maxWidth: "70%",
-                  backgroundColor:
-                    chat.sender === "user" ? "#2563eb" : "#f1f5f9",
-                  color:
-                    chat.sender === "user" ? "white" : "#111827"
-                }}
-              >
-                {chat.text}
-              </div>
+              {msg.text}
             </div>
           ))}
-
-          <div ref={chatEndRef} />
         </div>
 
-        <form
-          onSubmit={handleSend}
-          style={{ display: "flex", gap: "10px" }}
-        >
+        <div className="flex gap-3">
           <input
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Type your message..."
-            style={{
-              flex: 1,
-              padding: "10px",
-              borderRadius: "8px",
-              border: "1px solid #e5e7eb"
-            }}
+            placeholder="Describe your symptoms..."
+            className="input-field"
           />
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              padding: "10px 16px",
-              backgroundColor: "#2563eb",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer"
-            }}
-          >
-            {loading ? "..." : "Send"}
+          <button onClick={sendMessage} className="btn-primary">
+            Send
           </button>
-        </form>
+        </div>
+
       </div>
     </Layout>
   );

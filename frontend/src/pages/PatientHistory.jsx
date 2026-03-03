@@ -50,14 +50,27 @@ function PatientHistory() {
 
           <tbody>
             {appointments.map((appt) => (
-              <tr key={appt.id}>
+             <tr key={appt.id} className="hover:bg-slate-100 dark:hover:bg-slate-700 transition"> 
                 <td>{appt.doctor_id}</td>
 
                 <td>
                   {new Date(appt.appointment_time).toLocaleString()}
                 </td>
+                <td>
+  <span
+    className={`px-3 py-1 rounded-full text-sm font-medium ${
+      appt.status === "confirmed"
+        ? "bg-green-100 text-green-600"
+        : appt.status === "cancelled"
+        ? "bg-gray-200 text-gray-600"
+        : "bg-orange-100 text-orange-600"
+    }`}
+  >
+    {appt.status}
+  </span>
+</td>
 
-                <td>{appt.status}</td>
+                
 
                 <td>
                   {appt.status === "booked" && (

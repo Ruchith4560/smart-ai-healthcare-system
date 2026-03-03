@@ -1,52 +1,57 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import API from "../services/api";
+import toast from "react-hot-toast";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
+  const handleLogin = async (e) => {
+    e.preventDefault();
+
     try {
-      const res = await API.post("/login", {
-        email,
-        password,
-      });
-
-      // Store JWT
+      const res = await API.post("/login", { email, password });
       localStorage.setItem("token", res.data.access_token);
-
-      alert("Login successful!");
+      toast.success("Login successful");
       navigate("/dashboard");
-
-    } catch (error) {
-      console.log(error.response?.data);
-      alert("Login failed");
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Login failed");
     }
   };
 
   return (
-    <div>
-      <h2>Login</h2>
+    <div className="flex justify-center items-center min-h-screen bg-background">
+      <form
+        onSubmit={handleLogin}
+        className="bg-white p-8 rounded-xl shadow-sm w-96 space-y-6"
+      >
+        <h2 className="text-xl font-semibold text-center">Login</h2>
 
-      <input
-        placeholder="Email"
-        onChange={(e) => setEmail(e.target.value)}
-      />
+        <input
+          type="email"
+          placeholder="Email"
+          className="w-full border p-3 rounded-lg"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
 
-      <input
-        type="password"
-        placeholder="Password"
-        onChange={(e) => setPassword(e.target.value)}
-      />
+        <input
+          type="password"
+          placeholder="Password"
+          className="w-full border p-3 rounded-lg"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
 
-      <button onClick={handleLogin}>Login</button>
-
-      <p>
-        No account? <Link to="/register">Register</Link>
-      </p>
+        <button
+          type="submit"
+          className="w-full bg-primary hover:bg-blue-700 text-white py-3 rounded-lg"
+        >
+          Login
+        </button>
+      </form>
     </div>
   );
 }
