@@ -27,9 +27,20 @@ from .auth import (
     require_role,
 )
 from .ai_engine import suggest_specialization
+from fastapi.middleware.cors import CORSMiddleware
+
+
 
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 Base.metadata.create_all(bind=engine)
 
@@ -260,50 +271,33 @@ def get_doctor_availability(
         for slot in slots
     ]
 
-
-
-
 @app.post("/appointments/book")
-def book_appointment(
-    data: AppointmentCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("patient"))
-):
-    slot = db.query(DoctorAvailability).filter(
-        DoctorAvailability.id == data.slot_id,
-        DoctorAvailability.is_booked == "no"
-    ).first()
+def book_appointment(data: AppointmentCreate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
 
-    if not slot:
-        raise HTTPException(status_code=400, detail="Slot not available")
-
-    appointment = Appointment(
+    new_appointment = Appointment(
+        doctor_id=data.doctor_id,
         patient_id=current_user.id,
-        doctor_id=slot.doctor_id,
-        appointment_time=slot.available_time,
-        status="booked"
+        appointment_time=data.appointment_time
     )
 
-    slot.is_booked = "yes"
-
-    db.add(appointment)
+    db.add(new_appointment)
     db.commit()
-    db.refresh(appointment)
+    db.refresh(new_appointment)
 
-    return {
-        "message": "Appointment booked successfully",
-        "appointment_id": appointment.id
-    }
+    return {"message": "Appointment booked successfully"}
+
 
 
 @app.get("/appointments/my")
 def get_my_appointments(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("patient"))
+    current_user: User = Depends(get_current_user)
 ):
-    return db.query(Appointment).filter(
+    appointments = db.query(Appointment).filter(
         Appointment.patient_id == current_user.id
     ).all()
+
+    return appointments
 
 
 @app.get("/appointments/doctor")
@@ -339,11 +333,9 @@ def cancel_appointment(
     return {"message": "Appointment cancelled successfully"}
 from .schemas import AppointmentComplete
 
-
-@app.put("/appointments/complete/{appointment_id}")
-def complete_appointment(
+@app.put("/appointments/{appointment_id}/confirm")
+def confirm_appointment(
     appointment_id: int,
-    data: AppointmentComplete,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("doctor"))
 ):
@@ -356,15 +348,12 @@ def complete_appointment(
         raise HTTPException(status_code=404, detail="Appointment not found")
 
     if appointment.status != "booked":
-        raise HTTPException(status_code=400, detail="Cannot complete this appointment")
+        raise HTTPException(status_code=400, detail="Cannot confirm this appointment")
 
-    appointment.status = "completed"
-    appointment.doctor_notes = data.notes
-
+    appointment.status = "confirmed"
     db.commit()
-    db.refresh(appointment)
 
-    return {"message": "Appointment marked as completed"}
+    return {"message": "Appointment confirmed successfully"}
 from .schemas import ChatRequest
 from .ai_engine import medical_chatbot_response
 @app.post("/ai/chat")
@@ -423,3 +412,32 @@ def get_chat_history(
         }
         for chat in chats
     ]
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import os
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FRONTEND_DIST = os.path.join(BASE_DIR, "frontend", "dist")
+
+# Serve static assets
+app.mount(
+    "/assets",
+    StaticFiles(directory=os.path.join(FRONTEND_DIST, "assets")),
+    name="assets",
+)
+
+# Serve React app
+@app.get("/{full_path:path}")
+async def serve_react_app(full_path: str):
+    return FileResponse(os.path.join(FRONTEND_DIST, "index.html"))
