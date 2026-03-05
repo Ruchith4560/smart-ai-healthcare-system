@@ -3,16 +3,6 @@ from typing import Optional, List
 from datetime import datetime
 
 
-class AppointmentCreate(BaseModel):
-    doctor_id: int
-    problem: Optional[str] = None
-
-
-class AppointmentBook(BaseModel):
-    doctor_id: int
-    appointment_time: datetime
-
-
 class UserCreate(BaseModel):
     name: str
     email: str
@@ -30,6 +20,18 @@ class SymptomRequest(BaseModel):
     symptoms: List[str]
 
 
+class AppointmentCreate(BaseModel):
+    doctor_id: int
+    appointment_time: datetime
+
+
+class AppointmentBook(BaseModel):
+    doctor_id: int
+    appointment_time: datetime
+
+
+class AvailabilityCreate(BaseModel):
+    available_time: datetime
 
 
 class DiagnosisUpdate(BaseModel):
@@ -38,18 +40,13 @@ class DiagnosisUpdate(BaseModel):
     prescription: Optional[str] = None
 
 
-class AppointmentCreate(BaseModel):
-    doctor_id: int
-    appointment_time: datetime
-class AvailabilityCreate(BaseModel):
-    available_time: datetime
-
 class AppointmentComplete(BaseModel):
-    notes: Optional[str] = None 
-    
+    notes: Optional[str] = None
+
 
 class ChatRequest(BaseModel):
     message: str
+
 
 class ChatResponse(BaseModel):
     reply: str

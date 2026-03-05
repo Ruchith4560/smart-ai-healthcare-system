@@ -2,6 +2,10 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from .database import engine, get_db
 from .models import (
@@ -18,6 +22,8 @@ from .schemas import (
     AppointmentCreate,
     AvailabilityCreate,
     DiagnosisUpdate,
+    AppointmentComplete,
+    ChatRequest
 )
 from .auth import (
     hash_password,
@@ -26,17 +32,21 @@ from .auth import (
     get_current_user,
     require_role,
 )
-from .ai_engine import suggest_specialization
+from .ai_engine import suggest_specialization, medical_chatbot_response
+
 from fastapi.middleware.cors import CORSMiddleware
-
-
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import os
 
 
 app = FastAPI()
 
+# CORS
+origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -45,11 +55,10 @@ app.add_middleware(
 Base.metadata.create_all(bind=engine)
 
 
-
-
 @app.get("/")
 def home():
     return {"message": "Smart AI Healthcare System Running 🚀"}
+
 
 @app.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -103,8 +112,6 @@ def get_profile(current_user: User = Depends(get_current_user)):
     }
 
 
-
-
 @app.get("/doctor/dashboard")
 def doctor_dashboard(user: User = Depends(require_role("doctor"))):
     return {"message": f"Welcome Doctor {user.name}"}
@@ -113,8 +120,6 @@ def doctor_dashboard(user: User = Depends(require_role("doctor"))):
 @app.get("/patient/dashboard")
 def patient_dashboard(user: User = Depends(require_role("patient"))):
     return {"message": f"Welcome Patient {user.name}"}
-
-
 
 
 @app.get("/doctors")
@@ -138,7 +143,6 @@ def list_doctors(
         }
         for doctor in doctors
     ]
-
 
 
 class SymptomRequest(BaseModel):
@@ -243,9 +247,10 @@ def add_availability(
     current_user: User = Depends(require_role("doctor"))
 ):
     slot = DoctorAvailability(
-    doctor_id=current_user.id,
-    available_time=data.available_time
-)
+        doctor_id=current_user.id,
+        available_time=data.available_time
+    )
+
     db.add(slot)
     db.commit()
     db.refresh(slot)
@@ -260,7 +265,7 @@ def get_doctor_availability(
 ):
     slots = db.query(DoctorAvailability).filter(
         DoctorAvailability.doctor_id == doctor_id,
-        DoctorAvailability.is_booked == "no"
+        DoctorAvailability.is_booked == False
     ).all()
 
     return [
@@ -271,8 +276,13 @@ def get_doctor_availability(
         for slot in slots
     ]
 
+
 @app.post("/appointments/book")
-def book_appointment(data: AppointmentCreate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+def book_appointment(
+    data: AppointmentCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
 
     new_appointment = Appointment(
         doctor_id=data.doctor_id,
@@ -285,7 +295,6 @@ def book_appointment(data: AppointmentCreate, db: Session = Depends(get_db), cur
     db.refresh(new_appointment)
 
     return {"message": "Appointment booked successfully"}
-
 
 
 @app.get("/appointments/my")
@@ -331,7 +340,7 @@ def cancel_appointment(
     db.commit()
 
     return {"message": "Appointment cancelled successfully"}
-from .schemas import AppointmentComplete
+
 
 @app.put("/appointments/{appointment_id}/confirm")
 def confirm_appointment(
@@ -354,8 +363,8 @@ def confirm_appointment(
     db.commit()
 
     return {"message": "Appointment confirmed successfully"}
-from .schemas import ChatRequest
-from .ai_engine import medical_chatbot_response
+
+
 @app.post("/ai/chat")
 def ai_chat(
     data: ChatRequest,
@@ -364,7 +373,6 @@ def ai_chat(
 ):
     reply, specialization = medical_chatbot_response(data.message)
 
-    # Save chat history
     chat = ChatHistory(
         patient_id=current_user.id,
         message=data.message,
@@ -395,6 +403,8 @@ def ai_chat(
             for doc in doctors
         ]
     }
+
+
 @app.get("/ai/chat/history")
 def get_chat_history(
     db: Session = Depends(get_db),
@@ -412,32 +422,23 @@ def get_chat_history(
         }
         for chat in chats
     ]
-from fastapi.middleware.cors import CORSMiddleware
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONTEND_DIST = os.path.join(BASE_DIR, "frontend", "dist")
 
-# Serve static assets
-app.mount(
-    "/assets",
-    StaticFiles(directory=os.path.join(FRONTEND_DIST, "assets")),
-    name="assets",
-)
+# Only mount static files if the dist directory exists
+if os.path.exists(os.path.join(FRONTEND_DIST, "assets")):
+    app.mount(
+        "/assets",
+        StaticFiles(directory=os.path.join(FRONTEND_DIST, "assets")),
+        name="assets",
+    )
 
-# Serve React app
+
 @app.get("/{full_path:path}")
 async def serve_react_app(full_path: str):
-    return FileResponse(os.path.join(FRONTEND_DIST, "index.html"))
+    index_path = os.path.join(FRONTEND_DIST, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"message": "Frontend not built. Run 'npm run build' in frontend directory"}
