@@ -7,8 +7,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from .database import engine, get_db
-from .models import (
+from app.database import engine, get_db
+from app.models import (
     Base,
     ChatHistory,
     User,
@@ -16,7 +16,7 @@ from .models import (
     DoctorAvailability,
     SymptomHistory,
 )
-from .schemas import (
+from app.schemas import (
     UserCreate,
     UserLogin,
     AppointmentCreate,
@@ -25,14 +25,14 @@ from .schemas import (
     AppointmentComplete,
     ChatRequest
 )
-from .auth import (
+from app.auth import (
     hash_password,
     verify_password,
     create_access_token,
     get_current_user,
     require_role,
 )
-from .ai_engine import suggest_specialization, medical_chatbot_response
+from app.ai_engine import suggest_specialization, medical_chatbot_response
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
