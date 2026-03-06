@@ -3,10 +3,9 @@ services:
     name: smart-ai-healthcare-api
     env: python
     plan: free
-    buildCommand: |
-      cd app && pip install -r requirements.txt
-      cd ../frontend && npm install && npm run build
-    startCommand: uvicorn app:app --host 0.0.0.0 --port 8000
+    # only backend dependencies; frontend can be hosted separately or after
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
     autoDeploy: true
     envVars:
       - key: PYTHON_VERSION
