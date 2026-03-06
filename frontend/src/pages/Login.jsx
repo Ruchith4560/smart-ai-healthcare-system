@@ -51,6 +51,9 @@ function Login() {
         >
           Login
         </button>
+        <Link to="/register" className="text-blue-500 hover:underline">
+          Don't have an account? Register
+        </Link>
       </form>
     </div>
   );
