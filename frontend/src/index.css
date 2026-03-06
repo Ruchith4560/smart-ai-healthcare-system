@@ -1,26 +1,63 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Global smooth UI */
+/* Global styles */
 body {
-  @apply bg-gradient-to-br from-slate-50 to-blue-50 text-slate-800 antialiased transition-colors duration-300;
+  @apply bg-gradient-to-br from-primary-50 to-secondary-50 text-slate-800 antialiased font-sans;
+  font-family: 'Inter', sans-serif;
 }
 
 .dark body {
-  @apply bg-slate-900 text-slate-100;
+  @apply bg-gradient-to-br from-slate-900 to-slate-800 text-slate-100;
 }
 
-/* Buttons */
+/* Custom components */
 .btn-primary {
-  @apply bg-blue-600 hover:bg-blue-700 active:scale-95 text-white px-4 py-2 rounded-lg shadow-md transition duration-200;
+  @apply bg-primary-600 hover:bg-primary-700 active:scale-95 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 font-medium;
+}
+
+.btn-secondary {
+  @apply bg-secondary-600 hover:bg-secondary-700 active:scale-95 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 font-medium;
 }
 
 .btn-danger {
-  @apply bg-red-600 hover:bg-red-700 active:scale-95 text-white px-4 py-2 rounded-lg shadow-md transition duration-200;
+  @apply bg-red-600 hover:bg-red-700 active:scale-95 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 font-medium;
 }
 
-/* Fade animation */
+.btn-outline {
+  @apply border-2 border-primary-600 text-primary-600 hover:bg-primary-600 hover:text-white px-6 py-3 rounded-xl transition-all duration-200 font-medium;
+}
+
+/* Card styles */
+.card {
+  @apply bg-white dark:bg-slate-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-slate-200 dark:border-slate-700;
+}
+
+.card-hover {
+  @apply hover:scale-105 transition-transform duration-200;
+}
+
+/* Input styles */
+.input-field {
+  @apply w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200;
+}
+
+/* Animations */
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+.animate-bounce-in {
+  animation: bounceIn 0.6s ease-out;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -32,6 +69,45 @@ body {
   }
 }
 
-.animate-fadeIn {
-  animation: fadeIn 0.4s ease-in-out;
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-slate-100 dark:bg-slate-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-primary-400 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-primary-500;
 }
