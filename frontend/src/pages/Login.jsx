@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../services/api";
 import toast from "react-hot-toast";
+import { Link } from "react-router-dom";
 
 function Login() {
   const [email, setEmail] = useState("");
