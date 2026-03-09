@@ -1,110 +1,172 @@
-\# 🏥 Smart AI Healthcare Backend
+🏥 Smart AI Healthcare System
 
+A full-stack AI-powered healthcare management platform that enables patients to book appointments, interact with an AI medical assistant, and connect with specialized doctors through an intelligent recommendation system.
 
+Built using FastAPI, React (Vite), TailwindCSS, and SQLite, the platform demonstrates modern SaaS architecture with role-based dashboards, AI integration, and responsive UI.
 
-A FastAPI-based healthcare backend system with AI-powered medical assistance, role-based access control, and appointment management.
+🚀 Features
+👤 Authentication & Roles
 
+Secure JWT-based authentication
 
+Role-based access control
 
----
+Separate dashboards for patients and doctors
 
+🤖 AI Medical Assistant
 
+AI chatbot for symptom interaction
 
-\## 🚀 Features Implemented
+Intelligent doctor specialization recommendation
 
+Chat history tracking for patients
 
+🩺 Appointment Management
 
-\### 🔐 Authentication \& Security
+Patients can book appointments with doctors
 
-\- User Registration (Doctor \& Patient)
+Doctors can confirm or manage appointment requests
 
-\- JWT-based Login Authentication
+Patients can cancel appointments
 
-\- Role-Based Access Control (RBAC)
+View complete appointment history
 
+👨‍⚕️ Doctor Tools
 
+Set availability time slots
 
-\### 👨‍⚕️ Doctor Features
+Manage patient appointment requests
 
-\- Create Availability Slots
+Access patient symptom history
 
-\- View Patient Symptom History
+Add diagnosis and prescription
 
-\- Add Diagnosis \& Prescription
+💻 Modern Frontend
 
-\- View Appointments
+Built with React + Vite
 
-\- Complete Appointments
+Styled with TailwindCSS
 
+Responsive layout with sidebar navigation
 
+Dark mode support
 
-\### 🧑‍💻 Patient Features
+Professional dashboard 
 
-\- Book Appointment (Slot-based)
+🏗️ Tech Stack
 
-\- Cancel Appointment
+| Layer           | Technology                          |
+| --------------- | ----------------------------------- |
+| Backend         | FastAPI, SQLAlchemy, SQLite         |
+| Frontend        | React (Vite), TailwindCSS           |
+| Authentication  | JWT                                 |
+| AI Logic        | Custom Python AI Engine             |
+| Deployment      | Render (Backend), Vercel (Frontend) |
+| Version Control | Git & GitHub                        |
 
-\- View Appointment History
 
-\- AI-based Doctor Specialization Suggestion
 
-\- View Personal Symptom History
+📂 Project Structure
+smart-ai-healthcare-system
+│
+├── app/                 # FastAPI backend
+│   ├── main.py
+│   ├── models.py
+│   ├── schemas.py
+│   ├── auth.py
+│   ├── ai_engine.py
+│   └── database.py
+│
+├── frontend/            # React frontend
+│   ├── src/
+│   ├── components/
+│   ├── pages/
+│   └── services/
+│
+└── README.md
 
 
 
-\### 🤖 AI Medical Chatbot
+⚙️ Local Setup
+git clone https://github.com/Ruchith4560/smart-ai-healthcare-system.git
+cd smart-ai-healthcare-system
 
-\- Context-aware medical chatbot
+Backend Setup
+python -m venv venv
+source venv/bin/activate   # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
 
-\- Automatic doctor specialization detection
+Backend will run at:
 
-\- Doctor recommendation system
+http://localhost:8000
 
-\- Persistent chat history storage
+API Documentation:
 
+http://localhost:8000/docs
 
+Frontend Setup
+cd frontend
+npm install
+npm run dev
 
----
+Frontend runs at:
 
+http://localhost:5173
 
 
-\## 🛠️ Tech Stack
+🌐 Deployment
+Backend
 
+Deploy using Render
 
+Start Command:
 
-\- FastAPI
+uvicorn app.main:app --host 0.0.0.0 --port 10000
 
-\- SQLAlchemy
 
-\- SQLite
 
-\- JWT Authentication
+📸 Key Modules
 
-\- Pydantic
+Patient Dashboard
 
-\- Python 3.11+
+Doctor Dashboard
 
+Appointment Booking
 
+AI Chat Assistant
 
----
+Symptom-Based Doctor Recommendation
 
+Profile Management
 
 
-\## 📂 Project Structure
+🎯 Future Enhancements
 
-app/
+AI model integration (Gemini / OpenAI)
 
-├── main.py
+Real-time chat system
 
-├── models.py
+Video consultation support
 
-├── schemas.py
+Payment integration
 
-├── database.py
+Admin analytics dashboard
 
-├── auth.py
+Notification system 
 
-├── ai\_engine.py
 
+👨‍💻 Author
 
+Ruchith Macha
 
+GitHub
+https://github.com/Ruchith4560
+
+
+
+
+
+⭐ If You Like This Project
+
+Give the repository a star to support the project and future improvements.
